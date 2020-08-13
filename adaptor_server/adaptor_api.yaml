@@ -1,0 +1,373 @@
+
+openapi: "3.0.0"
+
+info:
+  title: "CNWAN Adaptor API"
+  description: "API that connects to a SDWAN controller to update endpoint policies using metadata from Kubernetes services."
+  version: "2.0.0"
+  termsOfService: "https://github.com/CloudNativeSDWAN/cnwan-adaptor"
+  contact:
+    email: "cnwan@cisco.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+
+tags:
+- name: "CNWAN Adaptor API"
+  description: "API to configure SDWAN controller credentials, traffic profiles and update endpoint metadata."
+
+paths:
+  /credentials:
+    get:
+      tags:
+      - "configure"
+      summary: "Get current SDWAN controller credentials"
+      operationId: "getCredentials"
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/credentials"
+        default:
+          description: Unexpected error
+    post:
+      tags:
+      - "configure"
+      summary: "Configure SDWAN controller credentials"
+      operationId: "postCredentials"
+      requestBody:
+        description: "SDWAN controller User, Password and IP address or URL"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/credentials"
+      responses:
+        '200':
+          description: 'Login OK'
+        '401':
+          description:  "Login error"
+        default:
+          description: Unexpected error
+    delete:
+      tags:
+        - "configure"
+      summary: "Delete SDWAN controller credentials"
+      operationId: "deleteCredentials"
+      responses:
+        '200':
+          description: "Success"
+        '500':
+          description: "Server Error"
+
+
+
+  /mappings:
+    get:
+      tags:
+      - "configure"
+      summary: "Get current mappings"
+      operationId: "getMappings"
+      responses:
+        '200':
+          description: 'OK'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/mapping"
+        default:
+          description: Unexpected error
+
+    post:
+      tags:
+      - "configure"
+      summary: "Create a new mapping entry"
+      operationId: "postMapping"
+      requestBody:
+        description: 'Definition of a new mapping'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/mapping"
+      responses:
+        '200':
+          description: 'Config OK'
+        default:
+          description: Unexpected error
+
+  /mappings/{metadataValue}:
+    put:
+      tags:
+      - "configure"
+      summary: "Update the definition of an existing mapping"
+      operationId: "putMapping"
+      parameters:
+        - name: metadataValue
+          in: path
+          description: "Metadata value"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: "mapping definition"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/mappingUpdate"
+      responses:
+        '200':
+          description: 'Update OK'
+        '404':
+          description: 'Cannot find mapping name'
+        default:
+          description: Unexpected error
+
+    delete:
+      tags:
+      - "configure"
+      summary: "Delete mapping"
+      operationId: "delete Mapping"
+      parameters:
+        - name: metadataValue
+          in: path
+          description: "Metadata value"
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Delete OK'
+        '400':
+          description: 'Cannot find mapping'
+        default:
+          description: Unexpected error
+
+  /cnwan/events:
+   post:
+    tags:
+    - "configure"
+    summary: "Send metadata updates for several endpoints at the same time"
+    operationId: "events"
+    requestBody:
+      description: "An array of endpoints to update, with the associated operation and metadata"
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/serviceEndpointEvents"
+    responses:
+      "200":
+        content:
+          application/json:
+            examples:
+              With body:
+                value:
+                  status: 200
+                  title: OK
+                  description: All resources processed successfully.
+              Empty body:
+                value: {}
+            schema:
+              $ref: '#/components/schemas/Response'
+        description: OK, all resources have been processed successfully. Body can
+          optionally include more information about the response or be empty.
+      "204":
+        description: No content, all resources have been processed successfully.
+      "207":
+        content:
+          application/json:
+            examples:
+              Some resources failed:
+                value:
+                  status: 207
+                  title: INVALID RESOURCES
+                  description: Some resources have not been processed successfully.
+                    List of failed resources is included.
+                  errors:
+                  - status: 400
+                    resource: custom-endpoint
+                    title: MISSING METADATA KEY
+                    description: The required metadata key was not found in this
+                      resource
+                  - status: 404
+                    resource: example-endpoint
+                    title: NOT FOUND
+                    description: 'Cannot process DELETE event: resource does not
+                      exist.'
+            schema:
+              $ref: '#/components/schemas/Response'
+        description: One or more resources have not been processed successfully.
+          A list of errors is provided.
+      "404":
+        description: Not found, most probably the `--adaptor-api` argument in CNWAN
+          Reader is misconfigured.
+      "500":
+        content:
+          application/json:
+            examples:
+              Generic internal server error:
+                value:
+                  status: 500
+                  title: INTERNAL SERVER ERROR
+                  description: An unexpected error occurred while handling the request.
+            schema:
+              $ref: '#/components/schemas/Response'
+        description: Internal Server Error, something went wrong on the adaptor
+          side. A `Response` object *may* be returned, containing a description
+            of why the adaptor had this error and what went wrong.
+      "503":
+        content:
+          application/json:
+            examples:
+              Authentication error:
+                value:
+                  status: 503
+                  title: AUTHENTICATION ERROR
+                  description: Request rejected because wrong or invalid credentials
+                    have been provided to the adaptor.
+              Service unavailalbe:
+                value:
+                  status: 503
+                  title: SERVICE UNAVAILABLE
+                  description: Adaptor encountered an unexpected error while trying
+                    to update resources on Service X.
+            schema:
+              $ref: '#/components/schemas/Response'
+        description: Service Unavailable. The returned `Response` object may contain
+          a description of why the service is not available.
+      default:
+        description: Unexpected error
+
+components:
+  schemas:
+    credentials:
+      type: object
+      required:
+        - sdwanControllerIpAddress
+        - user
+        - password
+        - sdwanMergedPolicyName
+      properties:
+        sdwanControllerIpAddress:
+          type: "string"
+        user:
+          type: "string"
+        password:
+          type: "string"
+        sdwanMergedPolicyName:
+          type: "string"
+
+    serviceEndpointEvents:
+      type: object
+      required:
+        - event
+        - service
+      properties:
+        event:
+          type: "string"
+          enum: ["create", "update", "delete"]
+        service:
+          type: object
+          properties:
+            address:
+              description: The observed IP address of the endpoint. Can be IPv4 or IPv6.
+              example: 131.37.88.10
+              type: string
+            port:
+              description: The observed port of the endpoint.
+              example: 8080
+              type: integer
+
+            metadata:
+              type: array
+              items:
+                type: object
+                required:
+                  - key
+                  - value
+                properties:
+                  key:
+                    type: "string"
+                  value:
+                    type: "string"
+
+    mapping:
+      type: object
+      required:
+      - metadataKey
+      - metadataValue
+      - policyType
+      - policyName
+      properties:
+        metadataKey:
+          type: "string"
+        metadataValue:
+          type: "string"
+        policyType:
+          type: "string"
+          enum: ["AppRoute", "Data"]
+        policyName:
+          type: "string"
+
+    mappingUpdate:
+      type: object
+      required:
+      - policyType
+      - policyName
+      properties:
+        policyType:
+          type: "string"
+          enum: ["AppRoute", "Data"]
+        policyName:
+          type: "string"
+
+    Response:
+
+      allOf:
+      - $ref: '#/components/schemas/ResourceResponse'
+      - $ref: '#/components/schemas/Errors'
+      description: Response returned.
+      type: object
+    ResourceResponse:
+      description: Information about the error occurred with the resource.
+      properties:
+        status:
+          description: The HTTP status code.
+          example: 404
+          type: integer
+        resource:
+          description: The name of the resource that triggered this error.
+          example: customer-endpoint
+          type: string
+        title:
+          description: A short title describing the error.
+          example: NOT FOUND
+          type: string
+        description:
+          description: Additional information about the error.
+          example: The resource does not exist on the server
+          type: string
+      required:
+      - description
+      - title
+      type: object
+    Errors:
+      properties:
+        errors:
+          description: A list of errors occurred, if any.
+          items:
+            $ref: '#/components/schemas/ResourceResponse'
+          type: array
+      type: object
+
+externalDocs:
+  description: "Find out more about the CNWAN Adaptor"
+  url: "https://github.com/CloudNativeSDWAN/cnwan-adaptor"
