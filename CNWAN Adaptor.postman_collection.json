@@ -1,0 +1,225 @@
+{
+	"info": {
+		"_postman_id": "681d0f0c-0886-4e3f-8374-083fd41ecd01",
+		"name": "Metadata Adaptor",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Credentials",
+			"item": [
+				{
+					"name": "Get credentials",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{server}}:{{port}}/credentials",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"credentials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete credentials",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://{{server}}:{{port}}/credentials",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"credentials"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post credentials",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"XXXX\",\n  \"user\": \"XXXXX\",\n  \"sdwanControllerIpAddress\": \"8.8.8.8\",\n  \"sdwanMergedPolicyName\" : \"your_policy_to_merge\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{server}}:{{port}}/credentials",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"credentials"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Mappings",
+			"item": [
+				{
+					"name": "Get Mappings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{server}}:{{port}}/mappings",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mappings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post New Mapping",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a9d7670a-b60f-4098-be8f-0219267c1172",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "  {\n    \"metadataKey\": \"cnwan.io/traffic-profile\",\n    \"metadataValue\": \"red_tunnel\",\n    \"policyName\": \"test_data\",\n    \"policyType\": \"Data\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{server}}:{{port}}/mappings",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mappings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Mapping Value",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://{{server}}:{{port}}/mappings/red_tunnel",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mappings",
+								"red_tunnel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Mapping",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"policyName\": \"test_data_3\",\n  \"policyType\": \"Data\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{server}}:{{port}}/mappings/red_tunnel",
+							"protocol": "http",
+							"host": [
+								"{{server}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mappings",
+								"red_tunnel"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Events",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n\n  {\n    \"event\": \"create\",\n    \"service\": {\n      \"name\" : \"name used by metadata reader to identify endpoints\",\n      \"address\": \"20.20.20.20\",\n      \"metadata\": [\n        {\n          \"key\": \"cnwan.io/traffic-profile\",\n          \"value\": \"red_tunnel\"\n        }\n      ],\n      \"port\": 20\n    }\n  }\n  ,\n    {\n    \"event\": \"create\",\n    \"service\": {\n      \"name\" : \"name used by metadata reader to identify endpoints\",\n      \"address\": \"10.10.10.10\",\n      \"metadata\": [\n        {\n          \"key\": \"cnwan.io/traffic-profile\",\n          \"value\": \"red_tunnel\"\n        }\n      ],\n      \"port\": 10\n    }\n  }\n \n]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}:{{port}}/cnwan/events",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"cnwan",
+						"events"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
