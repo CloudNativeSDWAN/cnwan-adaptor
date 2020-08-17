@@ -1,4 +1,6 @@
-# CNWAN Adaptor API server
+# CNWAN Adaptor 
+
+The CNWAN Adaptor is part of the Cloud Native SD-WAN (CNWAN) project. Please check the [CNWAN documentation](https://github.com/CloudNativeSDWAN/cnwan-docs) for the general project overview and architecture. You can contact the CNWAN team at [cnwan@cisco.com](mailto:cnwan@cisco.com).
 
 ## Overview
 This CNWAN Adaptor takes as input several cloud parameters, such as endpoint IP and port, and associated metadata (e.g. traffic profiles), and sends them to a SDWAN controller. The controller implements policies to steer traffic flows for these endpoints to the desired tunnel or apply a SLA on them.
