@@ -60,7 +60,7 @@ This example uses the [Connexion](https://github.com/zalando/connexion) library 
 It is possible to use the metadata_adaptor python library without the server. It exposes several high level functions equivalent to he ones in the adaptor. To use the library:
 
 ```bash
-cd adapor_library
+cd adaptor_library
 # Generate the package
 python3 setup.py sdist bdist_wheel
 # Install the package
@@ -91,4 +91,4 @@ mapping = {
 api.post_mapping(mapping)
 ```
 
-The library functions are in ```adapor_library/metadata_adaptor/core_lib.py```
+The library functions are in ```adaptor_library/metadata_adaptor/core_lib.py```
