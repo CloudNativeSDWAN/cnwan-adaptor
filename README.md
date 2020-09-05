@@ -8,7 +8,7 @@ This CNWAN Adaptor takes as input several cloud parameters, such as endpoint IP 
 The adaptor needs valid credentials for the SDWAN controller (user, password and IP or domain name).
 
 
-To see all the possible API calls, run the adaptor and type ```http://localhost:80/ui/``` in your browser. In addition, the file ```CNWAN Adaptor.postman_collection.json``` contains a Postman collection with examples of all the API functions.
+To see all the possible API calls, run the adaptor and type ```http://localhost:80/ui/``` in your browser. In addition, the file ```CNWAN Adaptor.postman_collection.json``` contains a Postman collection with examples of all the API functions. In particular, the Adaptor provides the ```/cnwan/events``` API endpoint (e.g. ```http://localhost:80/cnwan/events```) for the CNWAN Reader to send events.
 
 
 ## Requirements
