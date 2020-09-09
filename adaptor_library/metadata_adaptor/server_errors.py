@@ -82,5 +82,6 @@ class PartialEventsError(Error):
     def __init__(self, error_array):
         self.error_array = error_array
         
-
-        
+class DuplicatePolicy(Error):
+    def __init__(self, message):
+            self.message = message

@@ -155,51 +155,59 @@ class api_endpoint:
             error['description'] = 'The endpoint IP: ' + ipAddress + ' and port '  + portNumber + ' is already defined.  Ignoring this event.'
             return True, error
         
-        if not self.is_traffic_profile_defined(profileName):
+        defined, profile_type = self.is_traffic_profile_defined(profileName)
+        if not defined:
             logger.warning(err.CannotFindElement('post_service_endpoint', \
                 'Traffic profile ' + profileName + ' is not defined, ignoring request.'))
             error['status'] = 400
             error['title'] = 'CANNOT FIND TRAFFIC PROFILE'
             error['description'] = 'The traffic profile ' + profileName +  ' is not defined. Ignoring this event.'
             return True, error
+        
+        
         try:
 
-            if profileName in self.app_route_traffic_profiles.keys():
-                
+            if profile_type == 'AppRoute':
+                   
                 policy_name = self.app_route_traffic_profiles[profileName]['policyName']
-                policy_id = self.api_endpoint.get_approute_policy_id_by_name(policy_name)
-                if policy_id is not None:
-                    policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
-                    payload = templates.add_approute_endpoint(policy, ipAddress, portNumber)
-                    response = self.api_endpoint.put_approute_policy(policy_id, payload, 'post_service_endpoint')
-                    self.srv_endpoints[key] = {
-                        'trafficProfileName': profileName,
-                        'policyId' : policy_id  }
-                    # Trigger update for centralized policies that are active
-                    # The masterTemplatesAffected array is empty if the policy is NOT active
-                    if len(response["masterTemplatesAffected"]) != 0:
-                        self.api_endpoint.update_active_policy(response["masterTemplatesAffected"], 'post_service_endpoint')
-                else:
-                    logger.warning('Ignoring request: Cannot find a policy called %s, ', profileName)
+                defined, policy_id = self.is_policy_defined(policy_name, profile_type)        
+                if not defined:
+                    raise err.CannotFindElement('post_service_endpoint', policy_name)
+                    
+                policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
+                payload = templates.add_approute_endpoint(policy, ipAddress, portNumber)
+                response = self.api_endpoint.put_approute_policy(policy_id, payload, 'post_service_endpoint')
+                self.srv_endpoints[key] = {
+                    'trafficProfileName': profileName,
+                    'policyId' : policy_id  }
+                # Trigger update for centralized policies that are active
+                # The masterTemplatesAffected array is empty if the policy is NOT active
+                if len(response["masterTemplatesAffected"]) != 0:
+                    self.api_endpoint.update_active_policy(response["masterTemplatesAffected"], 'post_service_endpoint')
 
-            elif profileName in self.data_traffic_profiles.keys():
+
+            elif profile_type == 'Data':
                 
                 policy_name = self.data_traffic_profiles[profileName]['policyName']
-                policy_id = self.api_endpoint.get_data_policy_id_by_name(policy_name)
-                if policy_id is not None:
-                    policy = self.api_endpoint.get_data_policy_by_id(policy_id)
-                    payload = templates.add_data_endpoint(policy, ipAddress, portNumber)
-                    response = self.api_endpoint.put_data_policy(policy_id, payload, 'post_service_endpoint')
-                    self.srv_endpoints[key] = {
-                        'trafficProfileName': profileName,
-                        'policyId' : policy_id  }
-                    # Trigger update for centralized policies that are active
-                    # The masterTemplatesAffected array is empty if the policy is NOT active
-                    if len(response["masterTemplatesAffected"]) != 0:
-                        self.api_endpoint.update_active_policy(response["masterTemplatesAffected"], 'post_service_endpoint')
-                else:
-                    logger.warning('Ignoring request: Cannot find a policy called %s', profileName)
+                defined, policy_id = self.is_policy_defined(policy_name, profile_type)        
+                if not defined: 
+                   raise err.CannotFindElement('post_service_endpoint', policy_name) 
+                
+                policy = self.api_endpoint.get_data_policy_by_id(policy_id)
+                payload = templates.add_data_endpoint(policy, ipAddress, portNumber)
+                response = self.api_endpoint.put_data_policy(policy_id, payload, 'post_service_endpoint')
+                self.srv_endpoints[key] = {
+                    'trafficProfileName': profileName,
+                    'policyId' : policy_id  }
+                # Trigger update for centralized policies that are active
+                # The masterTemplatesAffected array is empty if the policy is NOT active
+                if len(response["masterTemplatesAffected"]) != 0:
+                    self.api_endpoint.update_active_policy(response["masterTemplatesAffected"], 'post_service_endpoint')
+
                     
+        except err.CannotFindElement as e:
+            logger.warning('Ignoring request: Cannot find a policy called %s', e.elem)
+        
         except Exception as e:
             logger.error('An error ocurred while communicating with the SDWAN controller.')
             logger.error('Details: %s', e)
@@ -255,16 +263,39 @@ class api_endpoint:
 
     def put_service_endpoint(self, ipAddress, portNumber, profileName):
         error_data = {}
-                
-        if not self.is_traffic_profile_defined(profileName):
+        
+        #Check if the profile is defined        
+        profile_defined, profile_type = self.is_traffic_profile_defined(profileName)
+        
+        if not profile_defined:    
             logger.warning(err.CannotFindElement("put_service_endpoint", \
                 "The traffic profile " + profileName + "  is not defined, ignoring this request"))
-    
-        self.delete_service_endpoint(ipAddress, portNumber)
-        error, error_data =  self.post_service_endpoint(ipAddress, portNumber, profileName)
+            error_data['status'] = 400
+            error_data['title'] = 'CANNOT FIND TRAFFIC PROFILE'
+            error_data['description'] = 'The traffic profile ' + profileName +  ' is not defined. Ignoring this event.'
+            return True, error_data
         
-        return error, error_data
+        #Check if the policy is defined
+        if profile_type == 'AppRoute':
+            policyName = self.app_route_traffic_profiles[profileName]['policyName']
+
+        else:
+            policyName = self.data_traffic_profiles[profileName]['policyName']
+
+        policy_defined, _ = self.is_policy_defined(policyName, profile_type)
+            
+        if not policy_defined:
+            logger.warning(err.CannotFindElement("put_service_endpoint", \
+                'Ignoring request: Cannot find a policy called '+ policyName ))
+            return False, error_data
         
+        # Do the actual work
+        error, error_data = self.delete_service_endpoint(ipAddress, portNumber)
+        if error:
+            return error, error_data
+        else:
+            error, error_data =  self.post_service_endpoint(ipAddress, portNumber, profileName)
+            return error, error_data
         
        
 
@@ -273,16 +304,22 @@ class api_endpoint:
         
         # Collect all endpoint + tunnel info for each profile
         cnwan_seqs = []
-        #previous_cnwan_remove = []
+        
+        
         for name, data in self.data_traffic_profiles.items():
             
-            previous_cnwan_remove.append(data['policyName'])
-            policy_id = self.api_endpoint.get_data_policy_id_by_name(data['policyName'])
-            policy = self.api_endpoint.get_data_policy_by_id(policy_id)
-            if len(policy['sequences']) > 1:
-                temp_seqs = templates.change_seq_name(policy, data['policyName'])
-                for seq in temp_seqs:
-                    cnwan_seqs.append(seq)
+            defined, policy_id = self.is_policy_defined(data['policyName'], 'Data')
+            if defined:    
+
+                previous_cnwan_remove.append(data['policyName'])                
+                policy = self.api_endpoint.get_data_policy_by_id(policy_id)
+                if len(policy['sequences']) > 1:
+                    temp_seqs = templates.change_seq_name(policy, data['policyName'])
+                    for seq in temp_seqs:
+                        cnwan_seqs.append(seq)
+            else:
+                logger.warning('In create_data_policy_with_all_endpoints, ignoring metadata value %s because \
+                               policy %s does not exist in the SD-WAN controller.', name, data['policyName'])
     
         # Rertrieve and update merge policy
         policy_id = self.api_endpoint.get_data_policy_id_by_name(self.credentials['sdwanMergedPolicyName'])
@@ -299,25 +336,26 @@ class api_endpoint:
     def create_approute_policy_with_all_endpoints(self,  previous_cnwan_remove = []):
         # Collect all endpoint + sla info for each profile
         cnwan_seqs = []
-        # previous_cnwan_remove = []
+        
         for name, data in self.app_route_traffic_profiles.items():
+        
+            defined, policy_id = self.is_policy_defined(data['policyName'], 'AppRoute')
+            if defined:    
             
-            previous_cnwan_remove.append(data['policyName'])
-            policy_id = self.api_endpoint.get_approute_policy_id_by_name(data['policyName'])
-            policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
-            if len(policy['sequences']) > 1:
-                temp_seqs = templates.change_seq_name(policy, data['policyName'])
-                for seq in temp_seqs:
-                    cnwan_seqs.append(seq)
-    
+                previous_cnwan_remove.append(data['policyName'])
+                policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
+                if len(policy['sequences']) > 1:
+                    temp_seqs = templates.change_seq_name(policy, data['policyName'])
+                    for seq in temp_seqs:
+                        cnwan_seqs.append(seq)
+            else:
+                logger.warning('In create_approute_policy_with_all_endpoints, ignoring metadata value %s because \
+                    policy %s does not exist in the SD-WAN controller.', name, data['policyName'])
+                
         # Rertrieve and update merge policy
         policy_id = self.api_endpoint.get_approute_policy_id_by_name(self.credentials['sdwanMergedPolicyName'])
         policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
-        
-        
-        
-        policy['sequences'] = templates.add_cnwan_sequences_to_merge_policy(policy['sequences'], cnwan_seqs, previous_cnwan_remove)
-        
+        policy['sequences'] = templates.add_cnwan_sequences_to_merge_policy(policy['sequences'], cnwan_seqs, previous_cnwan_remove)  
         logger.debug("New merge policy for AppRoute is %s", pprint.pformat(policy['sequences']))
         response = self.api_endpoint.put_approute_policy(policy_id, policy, 'create_approute_policy_with_all_endpoints')
                        
@@ -328,31 +366,45 @@ class api_endpoint:
     
     def is_traffic_profile_defined(self, profileName):
         if profileName in self.app_route_traffic_profiles.keys():
-            return True
+            return True, 'AppRoute'
         elif profileName in self.data_traffic_profiles.keys():
-            return True
+            return True, 'Data'
         else:
-            return False
+            return False, None
 
 
 
 ### POLICY MANAGEMENT
     
-    def is_policy_defined(self, data):
-        if data['policyType'] == 'AppRoute':
-            policy_id = self.api_endpoint.get_approute_policy_id_by_name(data['policyName'])
+    def is_policy_defined(self, policyName, policyType):
+        if policyType == 'AppRoute':
+            policy_id = self.api_endpoint.get_approute_policy_id_by_name(policyName)
             
-        elif data['policyType'] == 'Data':
-            policy_id = self.api_endpoint.get_data_policy_id_by_name(data['policyName'])
+        elif policyType == 'Data':
+            policy_id = self.api_endpoint.get_data_policy_id_by_name(policyName)
             
         else:          
-            return False
+            return False, None
         
         
         if policy_id is None:
-            return False
+            return False, None
         else:
-            return True
+            return True, policy_id
+        
+    def is_policy_in_mappings(self, policyName, policyType):
+        
+        if policyType == 'AppRoute':
+            for name, data in self.app_route_traffic_profiles.items(): 
+                if data['policyName'] == policyName:
+                    return True, name
+        
+        elif policyType == 'Data':
+            for name, data in self.data_traffic_profiles.items():
+                if data['policyName'] == policyName:
+                    return True, name
+        
+        return False, None
        
     
     def empty_approute_policy(self, policy_name, call_origin):
@@ -362,13 +414,12 @@ class api_endpoint:
         response = self.api_endpoint.put_approute_policy(policy_id, payload, call_origin)
         
     
-    def add_endpoint_array_approute_policy(self, policy_name, endpoints, call_origin):
-        policy_id = self.api_endpoint.get_approute_policy_id_by_name(policy_name)
+    def add_endpoint_array_approute_policy(self, policy_id, endpoints, call_origin):        
         policy = self.api_endpoint.get_approute_policy_by_id(policy_id)
         payload = templates.add_array_endpoints_to_approute_policy(endpoints, policy)
         response = self.api_endpoint.put_approute_policy(policy_id, payload, call_origin)
         
-        return policy_id
+        
     
     def empty_data_policy(self, policy_name, call_origin):
         policy_id = self.api_endpoint.get_data_policy_id_by_name(policy_name)
@@ -378,15 +429,13 @@ class api_endpoint:
         
     
     
-    def add_endpoint_array_data_policy(self, policy_name, endpoints, call_origin):
-    
-        policy_id = self.api_endpoint.get_data_policy_id_by_name(policy_name)
+    def add_endpoint_array_data_policy(self, policy_id, endpoints, call_origin):
         policy = self.api_endpoint.get_data_policy_by_id(policy_id)
         payload = templates.add_array_endpoints_to_data_policy(endpoints, policy)
         response = self.api_endpoint.put_data_policy(policy_id, payload, call_origin)
 
         
-        return policy_id
+        
 
 ### EXPOSED API FUNCITONS
 
@@ -423,13 +472,21 @@ class api_endpoint:
         
         name = mapping['metadataValue']
         profile_type = mapping['policyType']
+        policy_defined_in_mapping, mapping_name = self.is_policy_in_mappings(mapping['policyName'], profile_type)
 
         if name in self.app_route_traffic_profiles.keys() or \
            name in self.data_traffic_profiles.keys():
             
-            msg = 'Ignoring request: the traffic profile ' + name + 'is already defined '
+            msg = 'Ignoring request: the traffic profile ' + name + ' is already defined '
             logger.warning(err.ElementAlreadyDefined("post_traffic_profile", msg))
 
+        
+        elif policy_defined_in_mapping:
+            
+            msg = 'Ignoring request: the policy ' + mapping['policyName'] + ' is already defined in the mapping ' + mapping_name
+            logger.warning(msg)
+            raise err.DuplicatePolicy(msg)
+            
         else:
             
             if profile_type == 'AppRoute':
@@ -457,11 +514,13 @@ class api_endpoint:
             
             #Delete endpoints from the policy
             policy_name = self.app_route_traffic_profiles[profile_name]['policyName']
-            self.empty_approute_policy(policy_name,'delete_mapping')
+            policy_defined, _ = self.is_policy_defined(policy_name, 'AppRoute')
+            if policy_defined:
+
+                self.empty_approute_policy(policy_name,'delete_mapping')
             
-            
-            # Regenerate merge policy
-            self.create_approute_policy_with_all_endpoints()
+                # Regenerate merge policy
+                self.create_approute_policy_with_all_endpoints()
             
             
             # Delete associated endpoints from internal variable
@@ -475,14 +534,14 @@ class api_endpoint:
                 
             #Delete endpoints from the policy
             policy_name = self.data_traffic_profiles[profile_name]['policyName']
-            policy_id = self.api_endpoint.get_data_policy_id_by_name(policy_name)
-            policy = self.api_endpoint.get_data_policy_by_id(policy_id)
-            payload = templates.create_empty_policy(policy)
-            response = self.api_endpoint.put_data_policy(policy_id, payload, 'delete_traffic_profile')
-            #No active policies affected because these profiles are never active
+            policy_defined, _ = self.is_policy_defined(policy_name, 'Data')
+            if policy_defined:
+                
+                self.empty_data_policy(policy_name, 'delete_traffic_profile')
+                #No active policies affected because these profiles are never active
 
-            # Regenerate merge policy
-            self.create_data_policy_with_all_endpoints()
+                # Regenerate merge policy
+                self.create_data_policy_with_all_endpoints()
             
             # Delete associated endpoints from internal variable
             self.delete_service_endpoint_by_profile(profile_name)
@@ -500,19 +559,34 @@ class api_endpoint:
         self.check_config()
         self.test_connection()
         
-        if not self.is_traffic_profile_defined(profile_name):
+        
+        profile_defined, profile_type = self.is_traffic_profile_defined(profile_name)
+        # Verify new policiy is defined
+        policy_defined, new_policy_id = self.is_policy_defined(data['policyName'], data['policyType'])
+        #Verify policy NOT in use in other mappings
+        policy_defined_in_mapping, mapping_name = self.is_policy_in_mappings(data['policyName'], data['policyType'])
+        
+        if not profile_defined:
             logger.warning(err.CannotFindElement("put_traffic_profile", \
                 "This traffic profile does not exist, ignoring request."))
         
-        elif not self.is_policy_defined(data):
+        
+        elif not policy_defined:
             logger.warning(err.CannotFindElement("put_traffic_profile", \
-                "The policy" + str(data['policyName']) +" does not exist in the sdwan controller, ignoring request."))
+                "The policy " + str(data['policyName']) +" does not exist in the sdwan controller, ignoring request."))
                             
+        
+        elif policy_defined_in_mapping:
+            
+            msg = 'Ignoring request: the policy ' + data['policyName'] + ' is already defined in the mapping ' + mapping_name
+            logger.warning(msg)
+            raise err.DuplicatePolicy(msg)
+        
         else:
             #List affected endpoints  
             endpoints = self.get_service_endpoints_by_profile(profile_name)
         
-            if profile_name in self.app_route_traffic_profiles.keys():
+            if profile_type == 'AppRoute':
                 #Empty old policy
                 policy_name = self.app_route_traffic_profiles[profile_name]['policyName']
                 self.empty_approute_policy(policy_name, 'put_traffic_profile')
@@ -520,7 +594,7 @@ class api_endpoint:
                 if data['policyType'] == 'AppRoute':
                 # AppRoute to AppRoute
                     #Add enpoints to new policy
-                    policy_id = self.add_endpoint_array_approute_policy(data['policyName'], endpoints, 'put_traffic_profile')
+                    self.add_endpoint_array_approute_policy(new_policy_id, endpoints, 'put_traffic_profile')
                     
                     #Update internal var
                     old_policy = [ self.app_route_traffic_profiles[profile_name]['policyName'] ]
@@ -532,7 +606,7 @@ class api_endpoint:
                 else:
                 # AppRoute to Data
                     #Add endpoints to new policy
-                    policy_id = self.add_endpoint_array_data_policy(data['policyName'], endpoints, 'put_traffic_profile')
+                    self.add_endpoint_array_data_policy(new_policy_id, endpoints, 'put_traffic_profile')
                     
 
                     
@@ -547,7 +621,7 @@ class api_endpoint:
                     self.create_data_policy_with_all_endpoints()
                     self.create_approute_policy_with_all_endpoints(old_policy)
                     
-            elif profile_name in self.data_traffic_profiles.keys():
+            elif profile_type == 'Data':
                 #Empty old policy
                 policy_name = self.data_traffic_profiles[profile_name]['policyName']
                 self.empty_data_policy(policy_name, 'put_traffic_profile')
@@ -556,7 +630,7 @@ class api_endpoint:
                 # Data to Data     
                     
                     #Add endpoints to new policy
-                    policy_id = self.add_endpoint_array_data_policy(data['policyName'], endpoints, 'put_traffic_profile')
+                    self.add_endpoint_array_data_policy(new_policy_id, endpoints, 'put_traffic_profile')
                     
                     # Update internal var
                     old_policy = [ self.data_traffic_profiles[profile_name]['policyName'] ]
@@ -570,7 +644,7 @@ class api_endpoint:
                 # Data to AppRoute
                     
                     #Add endpoints to new policy
-                    policy_id = self.add_endpoint_array_approute_policy(data['policyName'], endpoints, 'put_traffic_profile')
+                    self.add_endpoint_array_approute_policy(new_policy_id, endpoints, 'put_traffic_profile')
                     
                     #Change type of profile        
                     old_policy = [ self.data_traffic_profiles[profile_name]['policyName'] ]
@@ -585,18 +659,25 @@ class api_endpoint:
 
             #Update internal endpoint variable
             for ep in endpoints:
-                self.srv_endpoints[ep]['policyId'] = policy_id
+                self.srv_endpoints[ep]['policyId'] = new_policy_id
 
 
-    def extract_profile(self, metadata):
-        for elem in metadata:
+
+    def extract_profile(self, service):
+        if 'metadata' not in service:
+            return None
+        
+        for elem in service['metadata']:
             if elem['key'] in self.metadata_keys:
                 return elem['value']
         return None
     
-    def get_md_key_not_defined(self, metadata):
+    def get_md_key_not_defined(self, service):
+        if 'metadata' not in service:
+            return ['MISSING METADATA ARRAY']
+        
         not_def = []
-        for elem in metadata:
+        for elem in service['metadata']:
             if elem['key'] not in self.metadata_keys:
                 not_def.append(elem['key'])
         
@@ -610,7 +691,10 @@ class api_endpoint:
         for elem in updates:
             ipAddress = elem['service']['address']
             portNumber = str(elem['service']['port'])
-            profileName = self.extract_profile(elem['service']['metadata'])
+            profileName = self.extract_profile(elem['service'])
+            logger.debug('Processing %s event on endpoint %s:%s',  elem['event'], ipAddress, portNumber)
+            
+            
             
             if elem['event'] == 'delete':
                 error, error_data = self.delete_service_endpoint(ipAddress, portNumber)
@@ -624,7 +708,7 @@ class api_endpoint:
                 error['status'] = 400
                 error['resource'] = elem['service']['name']
                 error['title'] = 'MISSING METADATA KEY'
-                error['description'] = 'The metadata key ' + str(self.get_md_key_not_defined(elem['service']['metadata'])) + ' is \
+                error['description'] = 'The metadata key ' + str(self.get_md_key_not_defined(elem['service'])) + ' is \
                     not currently defined in the adaptor. Ignoring this event.'
                 error_events.append(error)
                 

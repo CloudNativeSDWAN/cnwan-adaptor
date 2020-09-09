@@ -51,7 +51,7 @@ def create_traffic_data_empty_match(name, tunnel, encap):
                 },
                 {
                   "type": "count",
-                  "parameter": name +  '_' + str(1)
+                  "parameter": name +  '_' + str(10)
                 }
               ]
             }
@@ -72,7 +72,7 @@ def create_app_route_empty_match(name, sla_params):
         "description": "Application Aware Routing Policy for traffic profile " + name,
         "sequences": [
             {
-                "sequenceId": 1,
+                "sequenceId": 10,
                 "sequenceName": "App Route",
                 "sequenceType": "appRoute",
                 "sequenceIpType": "ipv4",
@@ -84,7 +84,7 @@ def create_app_route_empty_match(name, sla_params):
                 "actions": [
                     {
                         "type": "count",
-                        "parameter": name +  '_' + str(1)
+                        "parameter": name +  '_' + str(10)
                     },
                     {
                         "type": "slaClass",
