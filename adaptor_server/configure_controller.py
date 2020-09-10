@@ -54,6 +54,13 @@ def process_exception(e):
         response['title'] = 'INVALID RESOURCES'
         response['description'] = 'Some resources have not been processed successfully. List of failed resources is included.'
         return response, 207
+    
+    if ex_type is err.DuplicatePolicy:
+        response['status'] = 400
+        response['title'] = 'POLICY ALREADY DEFINED IN ANOTHER MAPPING'
+        response['description'] = e.message
+        return response, 400
+    
 
     response['status'] = 500
     response['title'] = 'UNKNOWN INTERNAL SERVER ERROR: Exception name ' \
