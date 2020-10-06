@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """
 Copyright 2020 Cisco
 
@@ -15,9 +16,10 @@ limitations under the License.
 """
 
 
-#! /usr/bin/env python
+
 """
-Class with REST Api GET and POST libraries
+Class with REST Api GET and POST libraries that communicate with vManage
+The basic rest_api_lib functions (login, get_request, post_request) are literally from: https://github.com/CiscoDevNet/Getting-started-with-Cisco-SD-WAN-REST-APIs/blob/master/rest_api_lib.py
 """
 
 import sys
