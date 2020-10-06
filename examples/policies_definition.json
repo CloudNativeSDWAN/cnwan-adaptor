@@ -1,0 +1,25 @@
+{
+  "__help_sla" : "Add as many SLAs as you need. Format:",
+  "__help_sla" : "sla name, latency (ms), loss (%), jitter (ms)",
+  "sla_defs": [
+        ["video_calls_sla", "40", "2", "25"],
+        ["file_transfer_sla", "500","10", "100"]
+  ],
+
+  "__help_data" : "Add as many policies as you need. Format: service directory metadataValue, policy name, tunnel color, encapsulation (gre, ipsec)",
+  "data_policies": [
+          ["video", "prefer_biz_internet", "biz-internet", "ipsec"],
+          ["standard", "prefer_public_internet", "public-internet","ipsec"]
+    ],
+
+  "__help_app_aware" : "Add as many policies as you need. Format: service directory metadataValue, policy name, sla name, preferred color (optional)",
+  "app_aware_policies": [
+        ["video-sla", "video_calls", "video_calls_sla","mpls"],
+        ["file-sla", "file_transfer","file_transfer_sla",""]
+    ],
+
+  "merge_policy_name" : "default_merge_policy",
+  "site_list" : ["100", "200"],
+  "vpn_list" : ["1", "2"],
+  "metadataKey" : "cnwan.io/traffic-profile"
+}
