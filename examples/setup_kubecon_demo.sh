@@ -86,4 +86,4 @@ done
 
 
 echo "Done!"
-echo "The CNWAN adaptor is ruuning at http://localhost:8080/ui/"
+echo "The CN-WAN adaptor is ruuning at http://localhost:8080/ui/"

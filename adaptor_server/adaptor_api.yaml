@@ -2,7 +2,7 @@
 openapi: "3.0.0"
 
 info:
-  title: "CNWAN Adaptor API"
+  title: "CN-WAN Adaptor API"
   description: "API that connects to a SDWAN controller to update endpoint policies using metadata from Kubernetes services."
   version: "2.0.0"
   termsOfService: "https://github.com/CloudNativeSDWAN/cnwan-adaptor"
@@ -13,7 +13,7 @@ info:
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 
 tags:
-- name: "CNWAN Adaptor API"
+- name: "CN-WAN Adaptor API"
   description: "API to configure SDWAN controller credentials, traffic profiles and update endpoint metadata."
 
 paths:
@@ -207,7 +207,7 @@ paths:
         description: One or more resources have not been processed successfully.
           A list of errors is provided.
       "404":
-        description: Not found, most probably the `--adaptor-api` argument in CNWAN
+        description: Not found, most probably the `--adaptor-api` argument in CN-WAN
           Reader is misconfigured.
       "500":
         content:
@@ -369,5 +369,5 @@ components:
       type: object
 
 externalDocs:
-  description: "Find out more about the CNWAN Adaptor"
+  description: "Find out more about the CN-WAN Adaptor"
   url: "https://github.com/CloudNativeSDWAN/cnwan-adaptor"

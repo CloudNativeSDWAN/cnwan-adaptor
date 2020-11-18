@@ -20,7 +20,7 @@ limitations under the License.
 
 
 """
-Script to create policies expected by the CNWAN adaptor
+Script to create policies expected by the CN-WAN adaptor
 The basic rest_api_lib functions (login, get_request, post_request) are literally from: https://github.com/CiscoDevNet/Getting-started-with-Cisco-SD-WAN-REST-APIs/blob/master/rest_api_lib.py
 
 USAGE A: on a python intepreter/as a library:
@@ -275,7 +275,7 @@ class rest_api_lib:
         approute_merge = {
           "name": name,
           "type": "appRoute",
-          "description": "merge policy for CNWAN traffic profiles using AppRoute policies",
+          "description": "merge policy for CN-WAN traffic profiles using AppRoute policies",
           "sequences": [],
   
         }
@@ -285,7 +285,7 @@ class rest_api_lib:
         data_merge= {
             "name": name,
             "type": "data",
-            "description": "merge policy for CNWAN traffic profiles using data policies",
+            "description": "merge policy for CN-WAN traffic profiles using data policies",
             "sequences": [],
             "defaultAction": { "type": "accept" }
         }
@@ -344,7 +344,7 @@ class rest_api_lib:
         payload = {
             "name": name,
             "type": "sla",
-            "description": "CNWAN-defined SLA " + name,
+            "description": "CN-WAN-defined SLA " + name,
             "entries": [
                 {
                     "jitter": jitter,
@@ -484,7 +484,7 @@ if __name__ == "__main__":
 
         #Attach to sites
         central_policy_id = ep.create_centralized_policy("CN-WAN centralized policy", \
-          "centralized policy containing CNWAN merge policies", \
+          "centralized policy containing CN-WAN merge policies", \
               appr_merge_id, data_merge_id, site_list_id, vpn_list_id)
     
         payload_bypass = { "isEdited": "false" }

@@ -363,7 +363,7 @@ def add_cnwan_sequences_to_merge_policy(merge_seqs, cnwan_seqs, previous_cnwan_r
     Renumber sequences in the following order:
         1- Sequences already present in the merge policy (if present). Ignore 
            sequences that come from the previous run and are related to cnwan
-        2- Sequences corresponding to CNWAN-defined endpoints
+        2- Sequences corresponding to CN-WAN-defined endpoints
     """
     new_seqs = []
     seqid = 10

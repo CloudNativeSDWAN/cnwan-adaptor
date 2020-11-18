@@ -3,7 +3,7 @@
 FROM maven:3-jdk-8-alpine AS SERVER_GEN
 RUN wget https://repo1.maven.org/maven2/io/swagger/codegen/v3/swagger-codegen-cli/3.0.20/swagger-codegen-cli-3.0.20.jar -O swagger-codegen-cli.jar
 
-# Generate CNWAN adaptor
+# Generate CN-WAN adaptor
 
 COPY adaptor_server/adaptor_api.yaml .
 COPY adaptor_server/generator_config.json .
