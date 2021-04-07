@@ -309,13 +309,17 @@ components:
       properties:
         metadataKey:
           type: "string"
+          example: "traffic-profile"
         metadataValue:
           type: "string"
+          example: "video"
         policyType:
           type: "string"
           enum: ["AppRoute", "Data"]
+          example: "AppRoute"
         policyName:
           type: "string"
+          example: "Gold SLA"
 
     mappingUpdate:
       type: object
